@@ -44,8 +44,50 @@ def slice_check(pr: dict, base: dict, spec: dict) -> tuple[list[str], list[str]]
       - fail if below "min", or if no_significant_drop and the paired CI over the slice's items
         lies entirely below 0
     Return (blocked ids like "slice:money_movement/pass_rate", report lines)."""
-    # TODO M5
-    return [], []
+    bs = spec.get("bootstrap", {})
+    blocked: list[str] = []
+    lines: list[str] = []
+    for sl in spec.get("slices") or []:
+        name, metric = sl["name"], sl["metric"]
+        sid = f"slice:{name}/{metric}"
+        a, b = per_item(pr, metric, slice_name=name), per_item(base, metric, slice_name=name)
+        verdict, note = "ok", ""
+        if not a:
+            # No scored row for this slice: it cannot be verified, which is not the same as passing.
+            verdict, note = "fail", "no scored rows in this slice"
+            val = None
+        else:
+            val = sum(a.values()) / len(a)
+            if "min" in sl and val < sl["min"]:
+                verdict = "fail"
+            if sl.get("no_significant_drop"):
+                keys = sorted(set(a) & set(b))
+                if keys:
+                    d, lo, hi = stats.paired_bootstrap([a[k] for k in keys], [b[k] for k in keys],
+                                                       n_resamples=bs.get("n_resamples", 1000), rng=bs.get("rng", 2027))
+                    note = f"Δ {d:+.3f} CI [{lo:+.3f}, {hi:+.3f}] n={len(keys)}"
+                    if hi < 0:
+                        verdict = "fail"
+                else:
+                    verdict, note = "fail", "no item in common with the baseline slice"
+        if verdict != "ok" and sl.get("blocking"):
+            blocked.append(sid)
+        label = "ok" if verdict == "ok" else ("BLOCK" if sl.get("blocking") else "warn")
+        shown = "—" if val is None else f"{val:.4f}"
+        lines.append(f"  {sid:<34} {shown:<8} {json.dumps({k: sl[k] for k in ('min', 'no_significant_drop') if k in sl}):<40} {note:<34} {label}")
+    return blocked, lines
+
+
+def new_failures(pr: dict, base: dict, metric: str) -> list[tuple[str, int]]:
+    """(item, seed) trials that passed on the baseline and fail on the PR.
+
+    An average cannot see a regression that fails the same NUMBER of trials as the baseline but
+    on different ones (a bug that moves from seed 55 to seed 33 leaves every mean unchanged).
+    Each trial is deterministic here, so a trial that used to pass and now fails is a regression
+    whatever the means say. With a real LLM this needs a tolerance (see docs/eval_card.md)."""
+    was = {(r["item_id"], r["seed"]): r.get(metric) for r in base["rows"]}
+    return sorted((r["item_id"], r["seed"]) for r in pr["rows"]
+                  if r.get(metric) is False and was.get((r["item_id"], r["seed"])) is True)
 
 
 def check(pr: dict, base: dict, spec: dict, base_spec: dict | None = None) -> tuple[list[str], list[str]]:
@@ -76,6 +118,11 @@ def check(pr: dict, base: dict, spec: dict, base_spec: dict | None = None) -> tu
             note = f"Δ {d:+.3f} CI [{lo:+.3f}, {hi:+.3f}]"
             if hi < 0:
                 verdict = "fail"
+        if th.get("no_new_failures") and val is not None:
+            new = new_failures(pr, base, mid)
+            if new:
+                verdict = "fail"
+                note = (note + " " if note else "") + f"{len(new)} newly failing trial(s), e.g. {new[0][0]}@{new[0][1]}"
         if verdict != "ok" and m.get("blocking"):
             blocked.append(mid)
         label = {"ok": "ok", "missing": "MISSING"}.get(verdict, "BLOCK" if m.get("blocking") else "warn")

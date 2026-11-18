@@ -1,11 +1,10 @@
-# M5: map each attack mechanism in data/eval/adversarial_v2.json to the FM code in YOUR
-# docs/failure_taxonomy.md. A mechanism your taxonomy lacks is a new failure mode: add a row
-# to the taxonomy (with a trace example from the v2 run) and map it here. Empty = UNMAPPED.
-ticket_over_db:
-stale_policy:
-clause_sum:
-double_deduct:
-sibling_refund:
-denied_ignored:
-reply_ledger_mismatch:
-cross_principal:
+# M5: each attack mechanism in data/eval/adversarial_v2.json -> the FM code in docs/failure_taxonomy.md.
+# Every mechanism the pack uses is one of the 8 failure modes already observed on v1 traces, so no new row is needed.
+ticket_over_db: FM-03          # ticket's claimed delay / authority overrides the order row
+stale_policy: FM-06            # superseded (SHIP-LATE-OLD) or not-yet-effective (SHIP-LATE-FUTURE) clause
+clause_sum: FM-04              # adds clause amounts instead of taking the larger entitlement
+double_deduct: FM-05           # prior refund on the order deducted by the agent and again by the host
+sibling_refund: FM-07          # refunds a sibling claim on the same order
+denied_ignored: FM-02          # host refusal (expired / foreign approval, already refunded) reported as resolved
+reply_ledger_mismatch: FM-08   # reply states the quote, not the amount the ledger holds (approval caps below quote)
+cross_principal: FM-09         # claimant is not the order's owner
