@@ -86,7 +86,7 @@ Số liệu lấy từ `src/reports/baseline_v2.json` (run `E-swarm-20261118-ab4
 | `seeded_regression` | 0.6429 | 0.6429 | 0.75 / 0.5714 / 0.3636 | chặn ở mọi metric chặn và mọi slice |
 
 - **`slice_regression`:** `pass_rate` 0.9357 vẫn trên sàn 0.85, và `pass_hat_5` bằng baseline (0.8929). Trước khi thêm `no_new_failures`, chỉ slice `money_movement` (0.85 < 0.90) chặn được nó, đúng như đề dự kiến. Lỗi chỉ ở E-014 ở các seed lẻ.
-- **`flaky_regression`:** `pass_rate` 0.9143 vẫn trên sàn, nên metric trung bình không chặn ổn định. `pass_hat_5` giảm còn 0.5714 (7 trong 14 item của v1 mất tính ổn định ở seed 33), thấp xa sàn 0.85.
+- **`flaky_regression`:** `pass_rate` 0.9143 vẫn trên sàn, nên metric trung bình không chặn ổn định. `pass_hat_5` giảm còn 0.5714 (12 trong 28 item hỏng ít nhất một seed, đều ở seed 33), thấp xa sàn 0.85.
 
 ## Giới hạn cỡ mẫu
 
