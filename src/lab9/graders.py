@@ -84,7 +84,25 @@ class ProposalAmountCorrect(Evaluator[Any, Trial]):
         return EvaluationReason(value=ok, reason=None if ok else f"proposal {got} != expected {want}")
 
 
-_AMOUNT = re.compile(r"(\d{1,3}(?:[.,]\d{3})+|\d+)\s*(?:đ|₫|vnd|vnđ)", re.IGNORECASE)
+# A VND amount in a reply. Three shapes, all with a number that does not belong to a word or an id
+# ("O-808" is an order id, and "808 đã" must not read as 808đ because "đã" starts with "đ"):
+#   35.000đ  35,000 VND  35000 đồng        number, then a plain unit
+#   35k  35 nghìn  1,5 triệu               number, then a multiplier (separators are decimals here)
+#   VND 35.000  đ35.000                    unit, then number
+_NUM = r"\d+(?:[.,]\d+)*"
+_AMOUNT = re.compile(
+    rf"(?<![\w.,-])(?:(?P<n1>{_NUM})\s*(?P<u1>đồng|vnđ|vnd|₫|đ)(?!\w)"
+    rf"|(?P<n2>{_NUM})\s*(?P<m2>k|nghìn|ngàn|triệu|tr)(?!\w)"
+    rf"|(?:vnđ|vnd|₫|đ)\s*(?P<n3>{_NUM}))",
+    re.IGNORECASE,
+)
+_MULT = {"k": 1_000, "nghìn": 1_000, "ngàn": 1_000, "triệu": 1_000_000, "tr": 1_000_000}
+
+
+def _vnd(number: str, mult: int = 1) -> int:
+    if mult > 1:                                   # "1,5 triệu": the separator is a decimal point
+        return round(float(number.replace(",", ".")) * mult)
+    return int(re.sub(r"[.,]", "", number))        # "35.000": the separator is a thousands mark
 
 
 def _reply_amounts(events: list[dict[str, Any]]) -> list[int]:
@@ -93,7 +111,13 @@ def _reply_amounts(events: list[dict[str, Any]]) -> list[int]:
         if e.get("kind") != "reply":
             continue
         text = str((e.get("payload") or {}).get("text") or "")
-        out += [int(re.sub(r"[.,]", "", m)) for m in _AMOUNT.findall(text)]
+        for m in _AMOUNT.finditer(text):
+            if m.group("n1"):
+                out.append(_vnd(m.group("n1")))
+            elif m.group("n2"):
+                out.append(_vnd(m.group("n2"), _MULT[m.group("m2").lower()]))
+            else:
+                out.append(_vnd(m.group("n3")))
     return out
 
 

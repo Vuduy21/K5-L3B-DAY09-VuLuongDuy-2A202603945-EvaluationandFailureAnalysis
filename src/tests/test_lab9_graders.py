@@ -48,3 +48,28 @@ def test_wrong_amount_in_ledger(graders):
 
 def test_override_event_breaks_db_fact(graders):
     assert graders.DbFactKept().evaluate(ctx(trial(events=[{"kind": "model_override", "payload": {}}]))).value is False
+
+
+@pytest.mark.parametrize("text,want", [
+    ("Dạ, LogiX đã hoàn 35.000đ cho đơn O-202.", [35000]),
+    ("Dạ, đơn O-808 đã hoàn 120.000đ.", [120000]),             # "808 đã" is an id and a word, not 808đ
+    ("Đã hoàn 35,000 VND vào tài khoản", [35000]),
+    ("Hoàn 35000 đồng ạ", [35000]),
+    ("Em hoàn 35k nhé", [35000]),
+    ("LogiX hoàn 35 nghìn", [35000]),
+    ("Bồi thường 1,5 triệu", [1500000]),
+    ("Tổng VND 150.000 cho đơn O-515", [150000]),
+    ("Dạ, đơn O-808 chưa đủ điều kiện hoàn.", []),
+    ("Mã đơn 12345 đang xử lý", []),                              # a bare number is not money
+])
+def test_reply_amount_extraction(graders, text, want):
+    assert graders._reply_amounts([{"kind": "reply", "payload": {"text": text}}]) == want
+
+
+def test_reply_amount_grader_catches_misreport_in_any_format(graders):
+    label = {"refund_vnd": 20000}
+    for said in ("35.000đ", "35k", "35 nghìn", "VND 35.000"):
+        t = trial(refund_vnd=20000, events=[{"kind": "reply", "payload": {"text": f"Đã hoàn {said} cho anh/chị"}}])
+        assert graders.ReplyAmountMatchesLedger().evaluate(ctx(t, label)).value is False, said
+    ok = trial(refund_vnd=20000, events=[{"kind": "reply", "payload": {"text": "Đơn O-808 đã hoàn 20k ạ"}}])
+    assert graders.ReplyAmountMatchesLedger().evaluate(ctx(ok, label)).value is True
