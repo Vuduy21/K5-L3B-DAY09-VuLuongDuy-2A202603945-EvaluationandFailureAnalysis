@@ -14,7 +14,7 @@ Lệnh in ra ba phần: các event trong trace (`reply`, `decision`, `model_over
 
 | Trường | Nội dung |
 |---|---|
-| Trial | `swarm C-002@55`, item `E-002`, trong `reports/baseline_v1.json` (run ID `E-swarm-20261118-0519`); đây là trial duy nhất fail trong 70 trial của baseline. |
+| Trial | `swarm C-002@55`, item `E-002`, trong `reports/baseline_v1.json` (run ID `E-swarm-20261118-32a9`); đây là trial duy nhất fail trong 70 trial của baseline. |
 | Triệu chứng | Grader Lab 8: `status resolved != denied`. Ledger hoàn 20.000đ (1 dòng) trong khi nhãn là 0đ. `refund_amount_correct` và `db_fact_kept` đều False. Cùng claim ở seed 11, 22, 33, 44 đúng. |
 | Bước sai đầu tiên | Event 3, `model_override {"delay_days": 5}`: ticket nói "trễ 5 ngày", dòng order ghi 2 ngày. |
 | Vì sao là bước *đầu tiên* | Event 1 `handoff` chỉ có `facts: {}` và tool đọc; event 2 `investigator` trả order hiển thị đúng (`visible: true`, delay 2 ngày), nên dữ liệu đầu vào đúng. Event 3 là lúc số 5 đè số 2. Event 4 `quote` (20.000đ, clause SHIP-LATE-03) chỉ là hệ quả: với 2 ngày quote là 0 (`no_entitlement`). |

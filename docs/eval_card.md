@@ -2,7 +2,7 @@
 
 Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10. Mọi số liệu lấy từ report do script sinh ra (`src/reports/*.json`), không gõ tay.
 
-- **Run ID / eval set SHA:** baseline `E-swarm-20261118-0519` · eval set `05192e9eb59e` (14 item, `data/eval/eval_set_v1.jsonl`). PR chạy gate: `E-fixed-20261118-0519`, `E-seeded_regression-20261118-0519` (cùng sha).
+- **Run ID / eval set SHA:** baseline `E-swarm-20261118-32a9` · eval set `32a9486ace0e` (14 item, `data/eval/eval_set_v1.jsonl`). PR chạy gate: `E-fixed-20261118-32a9`, `E-seeded_regression-20261118-32a9` (cùng sha).
 - **Phiên bản:** code = repo gốc Day 8 (`src/lab8/`, không sửa) + `src/lab9/` của bài này · eval set v1 · metric_spec 1.0 (`config/metric_spec.yaml`) · grader trong `lab9/graders.py` · seeds 11/22/33/44/55 · Python 3.13.
 - **Eval set:** v1, 14 item × 5 seed = 70 trial, nguồn `lab8_public`, nhãn tách riêng ở `labels_v1.json`. Mỗi item gắn `failure_modes` từ taxonomy và có provenance.
 - **Metric & ngưỡng** (trích `metric_spec.yaml`):
